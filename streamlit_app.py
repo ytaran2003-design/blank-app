@@ -109,8 +109,10 @@ with c3:
 st.markdown("---")
 
 # --------------------------------------------------
-# Chart 1 — Companies by GenAI tool
+# Chart 1 — Companies by GenAI Tool
 # --------------------------------------------------
+st.subheader("Companies Using Each GenAI Tool")
+
 tool_counts = (
     filtered_df
     .groupby("GenAI_Tool")
@@ -126,9 +128,13 @@ chart_tools = (
         y=alt.Y("Companies:Q", title="Number of Companies"),
         tooltip=["GenAI_Tool", "Companies"],
     )
+    .properties(
+        title="Companies Using Each GenAI Tool"   # <-- This forces a visible title
+    )
 )
 
 st.altair_chart(chart_tools, use_container_width=True)
+
 
 # --------------------------------------------------
 # Chart 2 — Average productivity change by GenAI tool
