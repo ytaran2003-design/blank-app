@@ -36,10 +36,7 @@ def load_data():
 
 df = load_data()
 
-# --------------------------------------------------
 # Sidebar filters
-# --------------------------------------------------
-
 st.sidebar.header("Filters")
 
 industry = st.sidebar.selectbox("Industry", ["All"] + sorted(df["Industry"].unique().tolist()))
@@ -61,21 +58,6 @@ if tool != "All":
 
 if year != "All":
     filtered_df = filtered_df[filtered_df["Adoption Year"] == year]
-
-
-# Apply filters
-filtered_df = df[
-    (df["Industry"].isin(industries))
-    & (df["Country"].isin(countries))
-    & (df["GenAI_Tool"].isin(tools))
-    & (df["Adoption Year"] >= year_range[0])
-    & (df["Adoption Year"] <= year_range[1])
-]
-
-if filtered_df.empty:
-    st.warning("No data matches your filters. Try relaxing one or more filters.")
-    st.stop()
-
 # --------------------------------------------------
 # Title & KPIs
 # --------------------------------------------------
