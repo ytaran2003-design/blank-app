@@ -18,7 +18,7 @@ st.set_page_config(
 def load_data():
     df = pd.read_csv("Enterprise_GenAI_Adoption_Impact.csv")
 
-    # Clean column names for easier coding
+    # Normalize column names so they are easy to use
     df = df.rename(
         columns={
             "Company Name": "Company_Name",
@@ -30,36 +30,38 @@ def load_data():
             "Employee Sentiment": "Employee_Sentiment",
         }
     )
+
     return df
 
 
 df = load_data()
 
 # --------------------------------------------------
-# Sidebar filters (global)
+# Sidebar filters
 # --------------------------------------------------
 st.sidebar.title("Filters")
 
 industries = st.sidebar.multiselect(
     "Industry",
-    sorted(df["Industry"].unique()),
+    options=sorted(df["Industry"].unique()),
     default=sorted(df["Industry"].unique()),
 )
 
 countries = st.sidebar.multiselect(
     "Country",
-    sorted(df["Country"].unique()),
+    options=sorted(df["Country"].unique()),
     default=sorted(df["Country"].unique()),
 )
 
 tools = st.sidebar.multiselect(
     "GenAI Tool",
-    sorted(df["GenAI_Tool"].unique()),
+    options=sorted(df["GenAI_Tool"].unique()),
     default=sorted(df["GenAI_Tool"].unique()),
 )
 
 min_year = int(df["Adoption Year"].min())
 max_year = int(df["Adoption Year"].max())
+
 year_range = st.sidebar.slider(
     "Adoption Year Range",
     min_value=min_year,
@@ -68,7 +70,7 @@ year_range = st.sidebar.slider(
     step=1,
 )
 
-# Apply global filters
+# Apply filters
 filtered_df = df[
     (df["Industry"].isin(industries))
     & (df["Country"].isin(countries))
@@ -78,7 +80,7 @@ filtered_df = df[
 ]
 
 if filtered_df.empty:
-    st.warning("No data matches your filters. Try relaxing one of the filters.")
+    st.warning("No data matches your filters. Try relaxing one or more filters.")
     st.stop()
 
 # --------------------------------------------------
@@ -91,18 +93,18 @@ st.write(
     "impacts productivity, training, and employees across industries."
 )
 
-kpi1, kpi2, kpi3 = st.columns(3)
+col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
 
-with kpi1:
+with col_kpi1:
     st.metric("Number of Records", len(filtered_df))
 
-with kpi2:
+with col_kpi2:
     st.metric(
         "Avg Productivity Change (%)",
         f"{filtered_df['Productivity_Change'].mean():.1f}",
     )
 
-with kpi3:
+with col_kpi3:
     st.metric(
         "Avg Training Hours",
         f"{filtered_df['Training_Hours'].mean():.0f}",
@@ -111,7 +113,7 @@ with kpi3:
 st.markdown("---")
 
 # --------------------------------------------------
-# 💡 Recommendation section
+# Recommendation section (like the workout planner style)
 # --------------------------------------------------
 st.subheader("💡 Data-Driven Recommendation Based on Your Selections")
 
@@ -129,7 +131,6 @@ with rec_col2:
         options=["(All countries)"] + sorted(df["Country"].unique()),
     )
 
-# Start from globally filtered data, then narrow for recommendation
 rec_df = filtered_df.copy()
 
 if rec_industry != "(All industries)":
@@ -143,7 +144,7 @@ if rec_df.empty:
         "No records for that industry / country combination under the current filters."
     )
 else:
-    # Which tool has the highest average productivity change?
+    # Best tool by average productivity in this slice
     by_tool = (
         rec_df.groupby("GenAI_Tool")["Productivity_Change"]
         .mean()
@@ -162,21 +163,21 @@ else:
         f"in this subset."
     )
 
-    # Slider for planned training hours
+    # Planned training hours slider
     min_train = int(rec_df["Training_Hours"].min())
     max_train = int(rec_df["Training_Hours"].max())
-    default_train = int(rec_df["Training_Hours"].median())
+    median_train = int(rec_df["Training_Hours"].median())
 
     planned_hours = st.slider(
         "Planned training hours per employee",
         min_value=min_train,
         max_value=max_train,
-        value=default_train,
+        value=median_train,
     )
 
-    # Look at companies with training hours close to the user's plan
+    # Companies with similar training hours (±10% of range, at least 50 hours)
     train_range = max_train - min_train
-    window = max(50, int(0.1 * train_range))  # at least 50 hours window
+    window = max(50, int(0.1 * train_range))
 
     close_df = rec_df[
         (rec_df["Training_Hours"] >= planned_hours - window)
@@ -251,12 +252,10 @@ chart_tool_productivity = (
 st.altair_chart(chart_tool_productivity, use_container_width=True)
 
 # --------------------------------------------------
-# Chart 3 — Company-level Training vs Productivity
-# (sampled so the app doesn't lag)
+# Chart 3 — Company-level Training vs Productivity (sampled)
 # --------------------------------------------------
 st.subheader("Company-level Training Hours vs Productivity Change")
 
-# Sample to keep the chart responsive
 if len(filtered_df) > 5000:
     sample_df = filtered_df.sample(n=5000, random_state=42)
 else:
