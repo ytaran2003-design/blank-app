@@ -39,49 +39,28 @@ df = load_data()
 # --------------------------------------------------
 # Sidebar filters
 # --------------------------------------------------
-st.sidebar.title("Filters")
+# Sidebar filters
+st.sidebar.header("Filters")
 
-industries = st.sidebar.multiselect(
-    "Industry",
-    options=sorted(df["Industry"].unique()),
-    default=sorted(df["Industry"].unique()),
-)
-
-countries = st.sidebar.multiselect(
-    "Country",
-    options=sorted(df["Country"].unique()),
-    default=sorted(df["Country"].unique()),
-)
-
-tools = st.sidebar.multiselect(
-    "GenAI Tool",
-    options=sorted(df["GenAI_Tool"].unique()),
-    default=sorted(df["GenAI_Tool"].unique()),
-)
-
-min_year = int(df["Adoption Year"].min())
-max_year = int(df["Adoption Year"].max())
-
-year_range = st.sidebar.slider(
-    "Adoption Year Range",
-    min_value=min_year,
-    max_value=max_year,
-    value=(min_year, max_year),
-    step=1,
-)
+industry = st.sidebar.selectbox("Industry", ["All"] + sorted(df["Industry"].unique().tolist()))
+country = st.sidebar.selectbox("Country", ["All"] + sorted(df["Country"].unique().tolist()))
+tool = st.sidebar.selectbox("GenAI Tool", ["All"] + sorted(df["GenAI Tool"].unique().tolist()))
+year = st.sidebar.selectbox("Adoption Year", ["All"] + sorted(df["Adoption Year"].unique().tolist()))
 
 # Apply filters
-filtered_df = df[
-    (df["Industry"].isin(industries))
-    & (df["Country"].isin(countries))
-    & (df["GenAI_Tool"].isin(tools))
-    & (df["Adoption Year"] >= year_range[0])
-    & (df["Adoption Year"] <= year_range[1])
-]
+filtered_df = df.copy()
 
-if filtered_df.empty:
-    st.warning("No data matches your filters. Try relaxing one or more filters.")
-    st.stop()
+if industry != "All":
+    filtered_df = filtered_df[filtered_df["Industry"] == industry]
+
+if country != "All":
+    filtered_df = filtered_df[filtered_df["Country"] == country]
+
+if tool != "All":
+    filtered_df = filtered_df[filtered_df["GenAI Tool"] == tool]
+
+if year != "All":
+    filtered_df = filtered_df[filtered_df["Adoption Year"] == year]
 
 # --------------------------------------------------
 # Title & KPIs
