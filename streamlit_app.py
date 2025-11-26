@@ -1,6 +1,165 @@
 import streamlit as st
+import pandas as pd
+import altair as alt
 
-st.title("🎈 My new app")
-st.write(
-    "Let's start building! For help and inspiration, head over to [docs.streamlit.io](https://docs.streamlit.io/)."
+# --------------------------------------------------
+# Page config
+# --------------------------------------------------
+st.set_page_config(
+    page_title="GenAI Adoption Impact Dashboard",
+    layout="wide",
+    page_icon="🤖",
 )
+
+# --------------------------------------------------
+# Load data
+# --------------------------------------------------
+@st.cache_data
+def load_data():
+    df = pd.read_csv("Enterprise_GenAI_Adoption_Impact.csv")
+
+    df = df.rename(
+        columns={
+            "Company Name": "Company_Name",
+            "GenAI Tool": "GenAI_Tool",
+            "Number of Employees Impacted": "Employees_Impacted",
+            "New Roles Created": "New_Roles_Created",
+            "Training Hours Provided": "Training_Hours",
+            "Productivity Change (%)": "Productivity_Change",
+            "Employee Sentiment": "Employee_Sentiment",
+        }
+    )
+    return df
+
+df = load_data()
+
+# --------------------------------------------------
+# Sidebar filters
+# --------------------------------------------------
+st.sidebar.title("Filters")
+
+industries = st.sidebar.multiselect(
+    "Industry",
+    sorted(df["Industry"].unique()),
+    default=sorted(df["Industry"].unique()),
+)
+
+countries = st.sidebar.multiselect(
+    "Country",
+    sorted(df["Country"].unique()),
+    default=sorted(df["Country"].unique()),
+)
+
+tools = st.sidebar.multiselect(
+    "GenAI Tool",
+    sorted(df["GenAI_Tool"].unique()),
+    default=sorted(df["GenAI_Tool"].unique()),
+)
+
+min_year = int(df["Adoption Year"].min())
+max_year = int(df["Adoption Year"].max())
+year_range = st.sidebar.slider(
+    "Adoption Year Range",
+    min_value=min_year,
+    max_value=max_year,
+    value=(min_year, max_year),
+)
+
+filtered_df = df[
+    (df["Industry"].isin(industries)) &
+    (df["Country"].isin(countries)) &
+    (df["GenAI_Tool"].isin(tools)) &
+    (df["Adoption Year"] >= year_range[0]) &
+    (df["Adoption Year"] <= year_range[1])
+]
+
+if filtered_df.empty:
+    st.warning("No data matches your filters. Try relaxing one of the filters.")
+    st.stop()
+
+# --------------------------------------------------
+# Title & intro
+# --------------------------------------------------
+st.title("🤖 GenAI Adoption Impact Dashboard")
+st.write(
+    "Use the filters in the sidebar to explore how enterprise GenAI adoption "
+    "impacts productivity, training, and employees across industries."
+)
+
+# --------------------------------------------------
+# KPI metrics
+# --------------------------------------------------
+c1, c2, c3 = st.columns(3)
+
+with c1:
+    st.metric("Companies", filtered_df["Company_Name"].nunique())
+
+with c2:
+    st.metric(
+        "Avg Productivity Change (%)",
+        f"{filtered_df['Productivity_Change'].mean():.1f}"
+    )
+
+with c3:
+    st.metric(
+        "Avg Training Hours",
+        f"{filtered_df['Training_Hours'].mean():.0f}"
+    )
+
+st.markdown("---")
+
+# --------------------------------------------------
+# Chart 1 — Companies by GenAI tool
+# --------------------------------------------------
+st.subheader("Companies using each GenAI tool")
+
+tool_counts = (
+    filtered_df["GenAI_Tool"]
+    .value_counts()
+    .reset_index()
+    .rename(columns={"index": "GenAI_Tool", "GenAI_Tool": "Companies"})
+)
+
+chart_tools = (
+    alt.Chart(tool_counts)
+    .mark_bar()
+    .encode(
+        x=alt.X("GenAI_Tool:N", title="GenAI Tool"),
+        y=alt.Y("Companies:Q", title="Number of Companies"),
+        tooltip=["GenAI_Tool", "Companies"],
+    )
+)
+
+st.altair_chart(chart_tools, use_container_width=True)
+
+# --------------------------------------------------
+# Chart 2 — Training hours vs productivity change
+# --------------------------------------------------
+st.subheader("Training Hours vs Productivity Change")
+
+scatter = (
+    alt.Chart(filtered_df)
+    .mark_circle(size=70, opacity=0.7)
+    .encode(
+        x=alt.X("Training_Hours:Q", title="Training Hours Provided"),
+        y=alt.Y("Productivity_Change:Q", title="Productivity Change (%)"),
+        color=alt.Color("GenAI_Tool:N", title="GenAI Tool"),
+        tooltip=[
+            "Company_Name",
+            "Industry",
+            "Country",
+            "GenAI_Tool",
+            "Training_Hours",
+            "Productivity_Change",
+        ],
+    )
+    .interactive()
+)
+
+st.altair_chart(scatter, use_container_width=True)
+
+# --------------------------------------------------
+# Raw data view
+# --------------------------------------------------
+with st.expander("Show raw data"):
+    st.write(filtered_df)
