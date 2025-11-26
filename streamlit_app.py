@@ -3,7 +3,7 @@ import pandas as pd
 import altair as alt
 
 # --------------------------------------------------
-# Page config
+# Page configuration
 # --------------------------------------------------
 st.set_page_config(
     page_title="GenAI Adoption Impact Dashboard",
@@ -18,6 +18,7 @@ st.set_page_config(
 def load_data():
     df = pd.read_csv("Enterprise_GenAI_Adoption_Impact.csv")
 
+    # Clean column names for easier coding
     df = df.rename(
         columns={
             "Company Name": "Company_Name",
@@ -31,10 +32,11 @@ def load_data():
     )
     return df
 
+
 df = load_data()
 
 # --------------------------------------------------
-# Sidebar filters
+# Sidebar filters (global)
 # --------------------------------------------------
 st.sidebar.title("Filters")
 
@@ -63,14 +65,16 @@ year_range = st.sidebar.slider(
     min_value=min_year,
     max_value=max_year,
     value=(min_year, max_year),
+    step=1,
 )
 
+# Apply global filters
 filtered_df = df[
-    (df["Industry"].isin(industries)) &
-    (df["Country"].isin(countries)) &
-    (df["GenAI_Tool"].isin(tools)) &
-    (df["Adoption Year"] >= year_range[0]) &
-    (df["Adoption Year"] <= year_range[1])
+    (df["Industry"].isin(industries))
+    & (df["Country"].isin(countries))
+    & (df["GenAI_Tool"].isin(tools))
+    & (df["Adoption Year"] >= year_range[0])
+    & (df["Adoption Year"] <= year_range[1])
 ]
 
 if filtered_df.empty:
@@ -78,33 +82,120 @@ if filtered_df.empty:
     st.stop()
 
 # --------------------------------------------------
-# Title & intro
+# Title & KPIs
 # --------------------------------------------------
 st.title("🤖 GenAI Adoption Impact Dashboard")
+
 st.write(
     "Use the filters in the sidebar to explore how enterprise GenAI adoption "
     "impacts productivity, training, and employees across industries."
 )
 
-# --------------------------------------------------
-# KPI metrics
-# --------------------------------------------------
-c1, c2, c3 = st.columns(3)
+kpi1, kpi2, kpi3 = st.columns(3)
 
-with c1:
-    st.metric("Companies", filtered_df["Company_Name"].nunique())
+with kpi1:
+    st.metric("Number of Records", len(filtered_df))
 
-with c2:
+with kpi2:
     st.metric(
         "Avg Productivity Change (%)",
-        f"{filtered_df['Productivity_Change'].mean():.1f}"
+        f"{filtered_df['Productivity_Change'].mean():.1f}",
     )
 
-with c3:
+with kpi3:
     st.metric(
         "Avg Training Hours",
-        f"{filtered_df['Training_Hours'].mean():.0f}"
+        f"{filtered_df['Training_Hours'].mean():.0f}",
     )
+
+st.markdown("---")
+
+# --------------------------------------------------
+# 💡 Recommendation section
+# --------------------------------------------------
+st.subheader("💡 Data-Driven Recommendation Based on Your Selections")
+
+rec_col1, rec_col2 = st.columns(2)
+
+with rec_col1:
+    rec_industry = st.selectbox(
+        "Industry for recommendation",
+        options=["(All industries)"] + sorted(df["Industry"].unique()),
+    )
+
+with rec_col2:
+    rec_country = st.selectbox(
+        "Country for recommendation",
+        options=["(All countries)"] + sorted(df["Country"].unique()),
+    )
+
+# Start from globally filtered data, then narrow for recommendation
+rec_df = filtered_df.copy()
+
+if rec_industry != "(All industries)":
+    rec_df = rec_df[rec_df["Industry"] == rec_industry]
+
+if rec_country != "(All countries)":
+    rec_df = rec_df[rec_df["Country"] == rec_country]
+
+if rec_df.empty:
+    st.info(
+        "No records for that industry / country combination under the current filters."
+    )
+else:
+    # Which tool has the highest average productivity change?
+    by_tool = (
+        rec_df.groupby("GenAI_Tool")["Productivity_Change"]
+        .mean()
+        .reset_index()
+        .sort_values("Productivity_Change", ascending=False)
+    )
+
+    top_row = by_tool.iloc[0]
+    top_tool = top_row["GenAI_Tool"]
+    top_prod = top_row["Productivity_Change"]
+    n_recs = rec_df[rec_df["GenAI_Tool"] == top_tool].shape[0]
+
+    st.success(
+        f"Based on your selections, **{top_tool}** has the highest average "
+        f"productivity change at **{top_prod:.1f}%** across **{n_recs} records** "
+        f"in this subset."
+    )
+
+    # Slider for planned training hours
+    min_train = int(rec_df["Training_Hours"].min())
+    max_train = int(rec_df["Training_Hours"].max())
+    default_train = int(rec_df["Training_Hours"].median())
+
+    planned_hours = st.slider(
+        "Planned training hours per employee",
+        min_value=min_train,
+        max_value=max_train,
+        value=default_train,
+    )
+
+    # Look at companies with training hours close to the user's plan
+    train_range = max_train - min_train
+    window = max(50, int(0.1 * train_range))  # at least 50 hours window
+
+    close_df = rec_df[
+        (rec_df["Training_Hours"] >= planned_hours - window)
+        & (rec_df["Training_Hours"] <= planned_hours + window)
+    ]
+
+    if close_df.empty:
+        expected_prod = rec_df["Productivity_Change"].mean()
+        st.write(
+            f"There are no companies with training hours very close to **{planned_hours}**. "
+            f"Across this subset in general, average productivity change is about "
+            f"**{expected_prod:.1f}%**."
+        )
+    else:
+        expected_prod = close_df["Productivity_Change"].mean()
+        st.write(
+            f"For companies with **≈ {planned_hours}** training hours in this subset, "
+            f"average productivity change has been about **{expected_prod:.1f}%**."
+        )
 
 st.markdown("---")
 
@@ -114,8 +205,7 @@ st.markdown("---")
 st.subheader("Companies Using Each GenAI Tool")
 
 tool_counts = (
-    filtered_df
-    .groupby("GenAI_Tool")
+    filtered_df.groupby("GenAI_Tool")
     .size()
     .reset_index(name="Companies")
 )
@@ -128,22 +218,18 @@ chart_tools = (
         y=alt.Y("Companies:Q", title="Number of Companies"),
         tooltip=["GenAI_Tool", "Companies"],
     )
-    .properties(
-        title="Companies Using Each GenAI Tool"   # <-- This forces a visible title
-    )
+    .properties(title="Companies Using Each GenAI Tool")
 )
 
 st.altair_chart(chart_tools, use_container_width=True)
 
-
 # --------------------------------------------------
-# Chart 2 — Average productivity change by GenAI tool
+# Chart 2 — Average productivity change by tool
 # --------------------------------------------------
 st.subheader("Average Productivity Change by GenAI Tool")
 
 tool_productivity = (
-    filtered_df
-    .groupby("GenAI_Tool")["Productivity_Change"]
+    filtered_df.groupby("GenAI_Tool")["Productivity_Change"]
     .mean()
     .reset_index()
 )
@@ -156,21 +242,29 @@ chart_tool_productivity = (
         y=alt.Y("Productivity_Change:Q", title="Avg Productivity Change (%)"),
         tooltip=[
             "GenAI_Tool",
-            alt.Tooltip("Productivity_Change:Q", format=".1f")
+            alt.Tooltip("Productivity_Change:Q", format=".1f"),
         ],
     )
+    .properties(title="Average Productivity Change by GenAI Tool")
 )
 
 st.altair_chart(chart_tool_productivity, use_container_width=True)
 
 # --------------------------------------------------
-# Chart 3 — Company-level Training Hours vs Productivity Change
+# Chart 3 — Company-level Training vs Productivity
+# (sampled so the app doesn't lag)
 # --------------------------------------------------
 st.subheader("Company-level Training Hours vs Productivity Change")
 
+# Sample to keep the chart responsive
+if len(filtered_df) > 5000:
+    sample_df = filtered_df.sample(n=5000, random_state=42)
+else:
+    sample_df = filtered_df.copy()
+
 scatter = (
-    alt.Chart(filtered_df)
-    .mark_circle(size=70, opacity=0.7)
+    alt.Chart(sample_df)
+    .mark_circle(size=50, opacity=0.5)
     .encode(
         x=alt.X("Training_Hours:Q", title="Training Hours Provided"),
         y=alt.Y("Productivity_Change:Q", title="Productivity Change (%)"),
@@ -185,12 +279,28 @@ scatter = (
         ],
     )
     .interactive()
+    .properties(title="Company-level Training vs Productivity (sample of records)")
 )
 
 st.altair_chart(scatter, use_container_width=True)
 
 # --------------------------------------------------
-# Raw data view
+# Raw data
 # --------------------------------------------------
-with st.expander("Show raw data"):
-    st.write(filtered_df)
+with st.expander("Show raw filtered data"):
+    st.write(
+        filtered_df[
+            [
+                "Company_Name",
+                "Industry",
+                "Country",
+                "GenAI_Tool",
+                "Adoption Year",
+                "Employees_Impacted",
+                "New_Roles_Created",
+                "Training_Hours",
+                "Productivity_Change",
+                "Employee_Sentiment",
+            ]
+        ]
+    )
