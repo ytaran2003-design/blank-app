@@ -130,11 +130,37 @@ chart_tools = (
 
 st.altair_chart(chart_tools, use_container_width=True)
 
+# --------------------------------------------------
+# Chart 2 — Average productivity change by GenAI tool
+# --------------------------------------------------
+st.subheader("Average Productivity Change by GenAI Tool")
+
+tool_productivity = (
+    filtered_df
+    .groupby("GenAI_Tool")["Productivity_Change"]
+    .mean()
+    .reset_index()
+)
+
+chart_tool_productivity = (
+    alt.Chart(tool_productivity)
+    .mark_bar()
+    .encode(
+        x=alt.X("GenAI_Tool:N", title="GenAI Tool"),
+        y=alt.Y("Productivity_Change:Q", title="Avg Productivity Change (%)"),
+        tooltip=[
+            "GenAI_Tool",
+            alt.Tooltip("Productivity_Change:Q", format=".1f")
+        ],
+    )
+)
+
+st.altair_chart(chart_tool_productivity, use_container_width=True)
 
 # --------------------------------------------------
-# Chart 2 — Training hours vs productivity change
+# Chart 3 — Company-level Training Hours vs Productivity Change
 # --------------------------------------------------
-st.subheader("Training Hours vs Productivity Change")
+st.subheader("Company-level Training Hours vs Productivity Change")
 
 scatter = (
     alt.Chart(filtered_df)
