@@ -111,13 +111,11 @@ st.markdown("---")
 # --------------------------------------------------
 # Chart 1 — Companies by GenAI tool
 # --------------------------------------------------
-st.subheader("Companies using each GenAI tool")
-
 tool_counts = (
-    filtered_df["GenAI_Tool"]
-    .value_counts()
-    .reset_index()
-    .rename(columns={"index": "GenAI_Tool", "GenAI_Tool": "Companies"})
+    filtered_df
+    .groupby("GenAI_Tool")
+    .size()
+    .reset_index(name="Companies")
 )
 
 chart_tools = (
@@ -131,6 +129,7 @@ chart_tools = (
 )
 
 st.altair_chart(chart_tools, use_container_width=True)
+
 
 # --------------------------------------------------
 # Chart 2 — Training hours vs productivity change
