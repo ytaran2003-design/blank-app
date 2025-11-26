@@ -39,36 +39,29 @@ df = load_data()
 # --------------------------------------------------
 # Sidebar filters
 # --------------------------------------------------
-st.sidebar.title("Filters")
 
-industries = st.sidebar.multiselect(
-    "Industry",
-    options=sorted(df["Industry"].unique()),
-    default=sorted(df["Industry"].unique()),
-)
+st.sidebar.header("Filters")
 
-countries = st.sidebar.multiselect(
-    "Country",
-    options=sorted(df["Country"].unique()),
-    default=sorted(df["Country"].unique()),
-)
+industry = st.sidebar.selectbox("Industry", ["All"] + sorted(df["Industry"].unique().tolist()))
+country = st.sidebar.selectbox("Country", ["All"] + sorted(df["Country"].unique().tolist()))
+tool = st.sidebar.selectbox("GenAI Tool", ["All"] + sorted(df["GenAI Tool"].unique().tolist()))
+year = st.sidebar.selectbox("Adoption Year", ["All"] + sorted(df["Adoption Year"].unique().tolist()))
 
-tools = st.sidebar.multiselect(
-    "GenAI Tool",
-    options=sorted(df["GenAI_Tool"].unique()),
-    default=sorted(df["GenAI_Tool"].unique()),
-)
+# Apply filters
+filtered_df = df.copy()
 
-min_year = int(df["Adoption Year"].min())
-max_year = int(df["Adoption Year"].max())
+if industry != "All":
+    filtered_df = filtered_df[filtered_df["Industry"] == industry]
 
-year_range = st.sidebar.slider(
-    "Adoption Year Range",
-    min_value=min_year,
-    max_value=max_year,
-    value=(min_year, max_year),
-    step=1,
-)
+if country != "All":
+    filtered_df = filtered_df[filtered_df["Country"] == country]
+
+if tool != "All":
+    filtered_df = filtered_df[filtered_df["GenAI Tool"] == tool]
+
+if year != "All":
+    filtered_df = filtered_df[filtered_df["Adoption Year"] == year]
+
 
 # Apply filters
 filtered_df = df[
