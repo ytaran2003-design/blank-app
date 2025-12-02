@@ -251,37 +251,7 @@ chart_tool_productivity = (
 
 st.altair_chart(chart_tool_productivity, use_container_width=True)
 
-# --------------------------------------------------
-# Chart 3 — Company-level Training vs Productivity (sampled)
-# --------------------------------------------------
-st.subheader("Company-level Training Hours vs Productivity Change")
 
-if len(filtered_df) > 5000:
-    sample_df = filtered_df.sample(n=5000, random_state=42)
-else:
-    sample_df = filtered_df.copy()
-
-scatter = (
-    alt.Chart(sample_df)
-    .mark_circle(size=50, opacity=0.5)
-    .encode(
-        x=alt.X("Training_Hours:Q", title="Training Hours Provided"),
-        y=alt.Y("Productivity_Change:Q", title="Productivity Change (%)"),
-        color=alt.Color("GenAI_Tool:N", title="GenAI Tool"),
-        tooltip=[
-            "Company_Name",
-            "Industry",
-            "Country",
-            "GenAI_Tool",
-            "Training_Hours",
-            "Productivity_Change",
-        ],
-    )
-    .interactive()
-    .properties(title="Company-level Training vs Productivity (sample of records)")
-)
-
-st.altair_chart(scatter, use_container_width=True)
 
 # --------------------------------------------------
 # Raw data
