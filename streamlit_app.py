@@ -8,7 +8,7 @@ import altair as alt
 st.set_page_config(
     page_title="GenAI Adoption Impact Dashboard",
     layout="wide",
-    page_icon="",
+    page_icon="🤖",
 )
 
 # --------------------------------------------------
