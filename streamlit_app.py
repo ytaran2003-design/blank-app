@@ -17,6 +17,24 @@ st.set_page_config(
 def load_data():
     df = pd.read_csv("Enterprise_GenAI_Adoption_Impact.csv")
 
+    # Normalize column names so they are easy to use
+    df = df.rename(
+        columns={
+            "Company Name": "Company_Name",
+            "GenAI Tool": "GenAI_Tool",
+            "Number of Employees Impacted": "Employees_Impacted",
+            "New Roles Created": "New_Roles_Created",
+            "Training Hours Provided": "Training_Hours",
+            "Productivity Change (%)": "Productivity_Change",
+            "Employee Sentiment": "Employee_Sentiment",
+        }
+    )
+
+    return df
+
+
+df = load_data()
+
 # --------------------------------------------------
 # Sidebar filters
 # --------------------------------------------------
