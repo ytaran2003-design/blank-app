@@ -8,7 +8,6 @@ import altair as alt
 st.set_page_config(
     page_title="GenAI Adoption Impact Dashboard",
     layout="wide",
-    page_icon="🤖",
 )
 
 # --------------------------------------------------
@@ -113,7 +112,7 @@ with col_kpi3:
 st.markdown("---")
 
 # --------------------------------------------------
-# Recommendation section (like the workout planner style)
+# Recommendation section 
 # --------------------------------------------------
 st.subheader(" Data-Driven Recommendation Based on Your Selections")
 
