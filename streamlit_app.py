@@ -8,7 +8,7 @@ import altair as alt
 st.set_page_config(
     page_title="GenAI Adoption Impact Dashboard",
     layout="wide",
-    page_icon="🤖",
+    page_icon="",
 )
 
 # --------------------------------------------------
@@ -86,7 +86,7 @@ if filtered_df.empty:
 # --------------------------------------------------
 # Title & KPIs
 # --------------------------------------------------
-st.title("🤖 GenAI Adoption Impact Dashboard")
+st.title(" GenAI Adoption Impact Dashboard")
 
 st.write(
     "Use the filters in the sidebar to explore how enterprise GenAI adoption "
@@ -115,7 +115,7 @@ st.markdown("---")
 # --------------------------------------------------
 # Recommendation section (like the workout planner style)
 # --------------------------------------------------
-st.subheader("💡 Data-Driven Recommendation Based on Your Selections")
+st.subheader(" Data-Driven Recommendation Based on Your Selections")
 
 rec_col1, rec_col2 = st.columns(2)
 
